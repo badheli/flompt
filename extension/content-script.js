@@ -97,23 +97,29 @@
         return el ? { el, position: 'prepend' } : null
       },
       getMessages () {
-        const container = document.querySelector('.ds-virtual-list-visible-items') ||
-                          document.querySelector('[data-virtual-list-item-key]')?.parentElement
+        // Find the virtual list container (stable: ds-virtual-list-visible-items)
+        const container = document.querySelector('.ds-virtual-list-visible-items')
         if (!container) return []
         const items = container.querySelectorAll('[data-virtual-list-item-key]')
         return [...items].map(item => {
-          // User message: div.d29f3d7d.ds-message > div.fbb737a4
-          const userEl = item.querySelector('.d29f3d7d.ds-message')
-          if (userEl) {
-            const c = userEl.querySelector('.fbb737a4')?.textContent?.trim() || userEl.textContent?.trim() || ''
-            return c ? { role: 'user', content: c } : null
-          }
-          // AI message: .ds-assistant-message-main-content or .ds-markdown
-          const aiEl = item.querySelector('.ds-assistant-message-main-content') ||
-                       item.querySelector('.ds-markdown')
-          if (aiEl) {
-            const c = aiEl.textContent?.trim() || ''
+          // AI message: stable class ds-assistant-message-main-content
+          const aiMain = item.querySelector('.ds-assistant-message-main-content')
+          if (aiMain) {
+            const blocks = aiMain.children.length > 0
+              ? [...aiMain.children].map(c => c.textContent?.trim() || '').filter(Boolean)
+              : [aiMain.textContent?.trim() || '']
+            const c = blocks.join('\n\n')
             return c ? { role: 'assistant', content: c } : null
+          }
+          // User message: first ds-message div with a simple text child (no markdown/thinking)
+          const msgEl = item.querySelector('.ds-message')
+          if (msgEl) {
+            // User messages: a single <div> child with plain text
+            const child = msgEl.firstElementChild
+            const c = child?.tagName === 'DIV' && !child.querySelector('.ds-markdown-paragraph, .md-code-block')
+              ? child.textContent?.trim() || ''
+              : msgEl.textContent?.trim() || ''
+            return c ? { role: 'user', content: c } : null
           }
           return null
         }).filter(Boolean)
