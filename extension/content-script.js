@@ -59,6 +59,38 @@
       },
     },
     {
+      name: 'DeepSeek',
+      hostnames: ['chat.deepseek.com'],
+      getInput () {
+        return document.querySelector('textarea[placeholder*="DeepSeek"]') ||
+               document.querySelector('textarea[placeholder*="deepseek"]') ||
+               document.querySelector('.ds-scroll-area textarea') ||
+               document.querySelector('#chat-input')
+      },
+      getSendBtn () {
+        return document.querySelector('button:has(.ds-button__icon)') ||
+               document.querySelector('.ds-icon-button') ||
+               document.querySelector('button[aria-label*="Send"]') ||
+               document.querySelector('button[type="submit"]')
+      },
+    },
+    {
+      name: 'Google AI Studio',
+      hostnames: ['aistudio.google.com'],
+      getInput () {
+        return document.querySelector('textarea[formcontrolname="promptText"]')
+      },
+      getSendBtn () {
+        return document.querySelector('ms-run-button button[type="submit"]') ||
+               document.querySelector('button:has(.run-button-label)')
+      },
+      getToolbarTarget () {
+        const el = document.querySelector('.button-row-left') ||
+                   document.querySelector('.buttons-row')
+        return el ? { el, position: 'prepend' } : null
+      },
+    },
+    {
       name: 'Gemini',
       hostnames: ['gemini.google.com'],
       getInput () {
@@ -108,7 +140,7 @@
   }
 
   // ── Config ─────────────────────────────────────────────────────────────────
-  const DEV_MODE      = false
+  const DEV_MODE      = true
   const FLOMPT_URL    = DEV_MODE
     ? 'http://localhost:5173/app/?extension=1'
     : 'https://flompt.dev/app/?extension=1'
@@ -130,12 +162,28 @@
 
   /** Maps the platform name to the expected output format */
   const PLATFORM_FORMAT = {
-    ChatGPT: 'chatgpt',
-    Claude:  'claude',
-    Gemini:  'gemini',
+    ChatGPT:  'chatgpt',
+    Claude:   'claude',
+    'Google AI Studio': 'gemini',
+    DeepSeek:           'deepseek',
+    Gemini:             'gemini',
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
+
+  /** Injects text into a native <textarea> or <input> (Angular / React / vanilla). */
+  function setNativeInput (el, text) {
+    el.focus()
+    // Use the native setter to trigger framework change detection
+    const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
+    if (setter) setter.call(el, text)
+    else el.value = text
+    el.dispatchEvent(new InputEvent('input', { bubbles: true, data: text }))
+    el.dispatchEvent(new Event('change', { bubbles: true }))
+  }
+
+  /** Injects text into a contenteditable div (ChatGPT / Claude / Gemini). */
   function setContentEditable (el, text) {
     el.focus()
 
@@ -164,6 +212,16 @@
     }
 
     setTimeout(() => el.dispatchEvent(new Event('change', { bubbles: true })), 50)
+  }
+
+  /** Auto-detects element type and injects text correctly. */
+  function setInputValue (el, text) {
+    const tag = el.tagName
+    if (tag === 'TEXTAREA' || tag === 'INPUT') {
+      setNativeInput(el, text)
+    } else {
+      setContentEditable(el, text)
+    }
   }
 
   /** Reads the current text from the platform input */
@@ -666,29 +724,8 @@
 
     try {
       lastSentText = text
-
-      // Save BEFORE el.focus() — determines whether to return focus to the iframe
       const platformHasFocus = el === document.activeElement || el.contains(document.activeElement)
-
-      el.focus()
-      const sel = window.getSelection()
-      const range = document.createRange()
-      range.selectNodeContents(el)
-      sel.removeAllRanges()
-      sel.addRange(range)
-
-      const ok = document.execCommand('insertText', false, text)
-
-      if (!ok || el.textContent.trim() !== text.trim()) {
-        const bEvt = new InputEvent('beforeinput', {
-          bubbles: true, cancelable: true,
-          inputType: 'insertReplacementText',
-          data: text,
-        })
-        el.dispatchEvent(bEvt)
-        if (!bEvt.defaultPrevented) el.textContent = text
-        el.dispatchEvent(new InputEvent('input', { bubbles: true, data: text }))
-      }
+      setInputValue(el, text)
 
       // Return focus to the iframe only if the user was there
       // If the user was typing in the platform → don't steal their focus
@@ -755,7 +792,7 @@
       }
 
       try {
-        setContentEditable(el, text)
+        setInputValue(el, text)
         // Return focus to the platform input so user can hit Enter immediately
         el.focus()
         closeSidebar()
