@@ -68,10 +68,14 @@
                document.querySelector('#chat-input')
       },
       getSendBtn () {
-        return document.querySelector('button:has(.ds-button__icon)') ||
-               document.querySelector('.ds-icon-button') ||
+        return document.querySelector('.ds-button--primary.ds-button--circle') ||
+               document.querySelector('button:has(.ds-button__icon)') ||
                document.querySelector('button[aria-label*="Send"]') ||
                document.querySelector('button[type="submit"]')
+      },
+      getToolbarTarget () {
+        const el = document.querySelector('.ds-toggle-button')?.parentElement
+        return el ? { el, position: 'prepend' } : null
       },
     },
     {
