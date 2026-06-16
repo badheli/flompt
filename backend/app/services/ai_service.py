@@ -296,10 +296,12 @@ async def _call_groq(system: str, user: str) -> str:
 
 # ─── OpenAI ───────────────────────────────────────────────────────────────────
 
+_openai_base = os.getenv("OPENAI_BASE_URL", "https://api.openai.com").rstrip("/")
+
 async def _call_openai(system: str, user: str) -> str:
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         resp = await client.post(
-            "https://api.openai.com/v1/chat/completions",
+            f"{_openai_base}/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {_get_openai_key()}",
                 "Content-Type": "application/json",
