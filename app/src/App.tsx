@@ -36,12 +36,15 @@ import { useMemoryStore } from '@/features/context-memory/useMemoryStore'
 import { SessionPanel, HistoryTab, useSessionStore } from '@/features/session-history'
 import './styles.css'
 
-const TAB_IDS: { id: Tab; Icon: LucideIcon }[] = [
+const BASE_TABS: { id: Tab; Icon: LucideIcon }[] = [
   { id: 'input',   Icon: PenLine },
   { id: 'canvas',  Icon: Network },
   { id: 'output',  Icon: Sparkles },
-  { id: 'history', Icon: MessageSquare },
 ]
+
+const TAB_IDS = isExtension
+  ? [...BASE_TABS, { id: 'history' as Tab, Icon: MessageSquare }]
+  : BASE_TABS
 
 const App = () => {
   const { undo, redo, activeTab, setActiveTab, isDecomposing, setRawPrompt, nodes, edges, setCompiledPrompt } = useFlowStore()
@@ -258,13 +261,15 @@ const App = () => {
           <PromptOutput />
         </aside>
 
-        <aside
-          className={`right-panel${activeTab !== 'history' ? ' panel-hidden' : ''}`}
-          aria-label="Session History"
-          aria-hidden={activeTab !== 'history'}
-        >
-          <HistoryTab />
-        </aside>
+        {isExtension && (
+          <aside
+            className={`right-panel${activeTab !== 'history' ? ' panel-hidden' : ''}`}
+            aria-label="Session History"
+            aria-hidden={activeTab !== 'history'}
+          >
+            <HistoryTab />
+          </aside>
+        )}
 
       </main>
 

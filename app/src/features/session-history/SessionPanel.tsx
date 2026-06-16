@@ -61,18 +61,18 @@ export default function SessionPanel() {
 
   return (
     <>
-      <div className="audit-backdrop" onClick={() => setOpen(false)} />
-      <aside className="audit-panel" role="dialog" aria-label="Session History">
-        <div className="audit-header">
-          <div className="audit-brand">
+      <div className="debugger-backdrop" onClick={() => setOpen(false)} aria-hidden="true" />
+      <aside className="memory-panel" role="dialog" aria-label="Session History" onKeyDown={e => { if (e.key === 'Escape') setOpen(false) }}>
+        <div className="debugger-header">
+          <div className="debugger-brand">
             <MessageSquare size={15} />
-            <span className="audit-title">Session History</span>
+            <span className="debugger-title">Session History</span>
           </div>
           <button className="ide-close-btn" onClick={() => setOpen(false)} aria-label="Close">
             <X size={15} />
           </button>
         </div>
-        <div className="audit-body">
+        <div className="memory-list">
           {sessions.length === 0 ? (
             <p className="session-empty">No sessions yet. Save one from the extension.</p>
           ) : (
