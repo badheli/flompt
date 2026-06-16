@@ -35,11 +35,13 @@
         const articles = document.querySelectorAll('article[data-message-author-role]')
         return [...articles].map(el => {
           const role = el.getAttribute('data-message-author-role') === 'user' ? 'user' : 'assistant'
-          const content = el.querySelector('.markdown')?.textContent?.trim() ||
-                          el.querySelector('[data-message-content]')?.textContent?.trim() ||
-                          el.textContent?.trim() || ''
-          return { role, content }
-        }).filter(m => m.content)
+          const body = el.querySelector('.markdown') || el.querySelector('[data-message-content]') || el
+          const blocks = body.children.length > 0
+            ? [...body.children].map(c => c.textContent?.trim() || '').filter(Boolean)
+            : [body.textContent?.trim() || '']
+          const content = blocks.join('\n\n')
+          return content ? { role, content } : null
+        }).filter(Boolean)
       },
     },
     {
@@ -72,9 +74,12 @@
         return [...msgs].map(el => {
           const role = el.getAttribute('data-message-author-role') === 'user' ||
                        el.classList.contains('user-message') ? 'user' : 'assistant'
-          const content = el.textContent?.trim() || ''
-          return { role, content }
-        }).filter(m => m.content)
+          const blocks = el.children.length > 0
+            ? [...el.children].map(c => c.textContent?.trim() || '').filter(Boolean)
+            : [el.textContent?.trim() || '']
+          const content = blocks.join('\n\n')
+          return content ? { role, content } : null
+        }).filter(Boolean)
       },
     },
     {
@@ -141,12 +146,20 @@
         return el ? { el, position: 'prepend' } : null
       },
       getMessages () {
-        const messages = document.querySelectorAll('ms-chat-turn')
-        return [...messages].map(el => {
-          const isUser = el.hasAttribute('user') || el.querySelector('[user]')
-          const content = el.textContent?.trim() || ''
-          return { role: isUser ? 'user' : 'assistant', content }
-        }).filter(m => m.content)
+        const turns = document.querySelectorAll('ms-chat-turn')
+        return [...turns].map(el => {
+          const container = el.querySelector('.chat-turn-container')
+          const role = container?.getAttribute('data-turn-role') === 'User' ||
+                       container?.classList.contains('user') ? 'user' : 'assistant'
+          const textEl = el.querySelector('ms-text-chunk ms-cmark-node') ||
+                         el.querySelector('.cmark-node')
+          if (!textEl) return null
+          const blocks = textEl.children.length > 0
+            ? [...textEl.children].map(c => c.textContent?.trim() || '').filter(Boolean)
+            : [textEl.textContent?.trim() || '']
+          const content = blocks.join('\n\n')
+          return content ? { role, content } : null
+        }).filter(Boolean)
       },
     },
     {
@@ -176,12 +189,15 @@
       getMessages () {
         const messages = document.querySelectorAll('.message, .conversation-item, [data-message]')
         return [...messages].map(el => {
-          const text = el.textContent?.trim() || ''
-          if (!text || text.length < 2) return null
           const isUser = el.classList.contains('user-query') ||
                          el.classList.contains('user') ||
                          el.querySelector('[data-role="user"]')
-          return { role: isUser ? 'user' : 'assistant', content: text }
+          const contentEl = el.querySelector('.message-content, .markdown') || el
+          const blocks = contentEl.children.length > 0
+            ? [...contentEl.children].map(c => c.textContent?.trim() || '').filter(Boolean)
+            : [contentEl.textContent?.trim() || '']
+          const content = blocks.join('\n\n')
+          return content ? { role: isUser ? 'user' : 'assistant', content } : null
         }).filter(Boolean)
       },
     },
