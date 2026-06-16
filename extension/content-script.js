@@ -151,9 +151,10 @@
           const container = el.querySelector('.chat-turn-container')
           const role = container?.getAttribute('data-turn-role') === 'User' ||
                        container?.classList.contains('user') ? 'user' : 'assistant'
-          const textEl = el.querySelector('ms-text-chunk ms-cmark-node') ||
-                         el.querySelector('.cmark-node')
-          if (!textEl) return null
+          // Find cmark-node outside the thinking/expansion panel
+          const textEl = el.querySelector('ms-text-chunk:not(.mat-expansion-panel-body ms-text-chunk) ms-cmark-node') ||
+                         el.querySelector('.cmark-node:not(.mat-expansion-panel-body .cmark-node)')
+          if (!textEl || textEl.closest('.mat-expansion-panel-content')) return null
           const blocks = textEl.children.length > 0
             ? [...textEl.children].map(c => c.textContent?.trim() || '').filter(Boolean)
             : [textEl.textContent?.trim() || '']

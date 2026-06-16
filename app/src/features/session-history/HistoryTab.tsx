@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { Download, Save, User, Bot } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Download, Save, User, Bot, RefreshCw } from 'lucide-react'
 import { isExtension } from '@/lib/platform'
 import type { Message } from './useSessionStore'
 
@@ -25,7 +25,9 @@ export default function HistoryTab() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [pageUrl, setPageUrl] = useState<string | null>(null)
+  const [autoFetch, setAutoFetch] = useState(false)
   const seenRef = useRef(new Set<string>())
+  const seqRef = useRef(0)  // insertion order for each message
 
   useEffect(() => {
     if (!isExtension) return
@@ -36,9 +38,9 @@ export default function HistoryTab() {
       if (e.data?.type === 'FLOMPT_MESSAGES_RESULT' && Array.isArray(e.data.messages)) {
         const incoming: Message[] = e.data.messages
         const fresh = incoming.filter(m => !seenRef.current.has(msgHash(m)))
-        fresh.forEach(m => seenRef.current.add(msgHash(m)))
+        fresh.forEach(m => { seenRef.current.add(msgHash(m)); (m as any).__seq = ++seqRef.current })
         if (fresh.length > 0) {
-          setMessages(prev => [...prev, ...fresh])
+          setMessages(prev => [...prev, ...fresh].sort((a, b) => ((a as any).__seq || 0) - ((b as any).__seq || 0)))
         }
         setSaved(false)
         if (e.data.pageUrl) setPageUrl(e.data.pageUrl)
@@ -48,10 +50,17 @@ export default function HistoryTab() {
     return () => window.removeEventListener('message', handler)
   }, [])
 
-  const handleFetch = () => {
+  const doFetch = useCallback(() => {
     if (!isExtension) return
     window.parent.postMessage({ type: 'FLOMPT_FETCH_MESSAGES' }, '*')
-  }
+  }, [])
+
+  // Auto-fetch: poll every 2s when toggle is on
+  useEffect(() => {
+    if (!autoFetch) return
+    const id = setInterval(doFetch, 2000)
+    return () => clearInterval(id)
+  }, [autoFetch, doFetch])
 
   const handleSave = async () => {
     if (messages.length === 0 || saving) return
@@ -83,9 +92,17 @@ export default function HistoryTab() {
         <div className="block-list-toolbar-actions">
           {isExtension && (
             <>
-              <button className="btn btn-primary" onClick={handleFetch}>
+              <button className="btn btn-primary" onClick={doFetch}>
                 <Download size={14} /> Fetch
               </button>
+              <button
+                className={`btn ${autoFetch ? 'btn-accent' : 'btn-secondary'}`}
+                onClick={() => setAutoFetch(v => !v)}
+                title={autoFetch ? 'Auto-fetching every 2s' : 'Manual fetch only'}
+              >
+                <RefreshCw size={14} className={autoFetch ? 'icon-spin' : ''} /> Auto
+              </button>
+              {autoFetch && <span className="history-saved-hint" style={{ fontSize: 10 }}>{messages.length} msgs</span>}
               <button className="btn btn-primary" onClick={handleSave} disabled={saving || messages.length === 0}>
                 <Save size={14} /> {saving ? 'Saving...' : 'Save'}
               </button>
