@@ -6,11 +6,12 @@ router = APIRouter(prefix="/conversations", tags=["conversations"])
 
 
 @router.post("", response_model=ConversationResponse, status_code=201)
-async def create(body: ConversationCreate):
-    result = db.insert_conversation(
+async def create_or_update(body: ConversationCreate):
+    result = db.upsert_conversation(
         platform=body.platform,
         messages=[m.model_dump() for m in body.messages],
         title=body.title,
+        page_url=body.page_url,
     )
     return result
 

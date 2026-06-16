@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Download, Save, User, Bot } from 'lucide-react'
 import { isExtension } from '@/lib/platform'
 import type { Message } from './useSessionStore'
@@ -20,26 +20,34 @@ export default function HistoryTab() {
   const [messages, setMessages] = useState<Message[]>([])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [pageUrl, setPageUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isExtension) return
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'FLOMPT_PLATFORM_INFO' && e.data.pageUrl) {
+        setPageUrl(e.data.pageUrl)
+      }
+      if (e.data?.type === 'FLOMPT_MESSAGES_RESULT' && Array.isArray(e.data.messages)) {
+        setMessages(e.data.messages)
+        setSaved(false)
+        if (e.data.pageUrl) setPageUrl(e.data.pageUrl)
+      }
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [])
 
   const handleFetch = () => {
     if (!isExtension) return
     window.parent.postMessage({ type: 'FLOMPT_FETCH_MESSAGES' }, '*')
   }
 
-  // Listen for fetched messages from extension
-  if (isExtension) {
-    window.addEventListener('message', (e) => {
-      if (e.data?.type === 'FLOMPT_MESSAGES_RESULT' && Array.isArray(e.data.messages)) {
-        setMessages(e.data.messages)
-        setSaved(false)
-      }
-    })
-  }
-
   const handleSave = async () => {
-    if (messages.length === 0) return
+    if (messages.length === 0 || saving) return
     setSaving(true)
     const title = messages.find((m) => m.role === 'user')?.content?.slice(0, 60) || ''
+
     try {
       await fetch(API_BASE, {
         method: 'POST',
@@ -48,6 +56,7 @@ export default function HistoryTab() {
           platform: getCurrentPlatform(),
           messages,
           title: title + (title.length >= 60 ? '...' : ''),
+          page_url: pageUrl,
         }),
       })
       setSaved(true)

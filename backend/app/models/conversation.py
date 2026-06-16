@@ -19,6 +19,7 @@ class ConversationCreate(BaseModel):
     platform: str
     messages: list[Message]
     title: str = ""
+    page_url: str = ""
 
     @field_validator("messages")
     @classmethod

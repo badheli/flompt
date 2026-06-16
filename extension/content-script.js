@@ -492,6 +492,7 @@
           type: 'FLOMPT_PLATFORM_INFO',
           platform: platform.name,
           format: PLATFORM_FORMAT[platform.name] || 'claude',
+          pageUrl: location.href,
         }, '*')
       }
       // Auto-import the platform input on first load
@@ -535,6 +536,7 @@
           type: 'FLOMPT_PLATFORM_INFO',
           platform: platform.name,
           format: PLATFORM_FORMAT[platform.name] || 'claude',
+          pageUrl: location.href,
         }, '*')
       }
       const text = getInputText()
@@ -832,6 +834,7 @@
       iframeEl?.contentWindow?.postMessage({
         type: 'FLOMPT_MESSAGES_RESULT',
         messages: msgs,
+        pageUrl: location.href,
       }, '*')
     }
   })
