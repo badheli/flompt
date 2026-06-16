@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Download, Save, User, Bot } from 'lucide-react'
 import { isExtension } from '@/lib/platform'
 import type { Message } from './useSessionStore'
 
 const API_BASE = '/api/conversations'
+
+function msgHash(m: Message): string {
+  return `${m.role}:${(m.content || '').slice(0, 200)}`
+}
 
 function getCurrentPlatform(): string {
   if (typeof window === 'undefined') return 'unknown'
@@ -21,6 +25,7 @@ export default function HistoryTab() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [pageUrl, setPageUrl] = useState<string | null>(null)
+  const seenRef = useRef(new Set<string>())
 
   useEffect(() => {
     if (!isExtension) return
@@ -29,7 +34,12 @@ export default function HistoryTab() {
         setPageUrl(e.data.pageUrl)
       }
       if (e.data?.type === 'FLOMPT_MESSAGES_RESULT' && Array.isArray(e.data.messages)) {
-        setMessages(e.data.messages)
+        const incoming: Message[] = e.data.messages
+        const fresh = incoming.filter(m => !seenRef.current.has(msgHash(m)))
+        fresh.forEach(m => seenRef.current.add(msgHash(m)))
+        if (fresh.length > 0) {
+          setMessages(prev => [...prev, ...fresh])
+        }
         setSaved(false)
         if (e.data.pageUrl) setPageUrl(e.data.pageUrl)
       }
