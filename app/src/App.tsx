@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { PenLine, Network, Sparkles, Github, History, Brain, LayoutList, Play, ShieldCheck } from 'lucide-react'
+import { PenLine, Network, Sparkles, Github, History, Brain, LayoutList, Play, ShieldCheck, MessageSquare } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Tooltip, TooltipProvider } from '@/components/ui/tooltip'
 import { initAnalytics, setSource, analytics } from '@/lib/analytics'
@@ -33,12 +33,14 @@ import MemoryPanel from '@/features/context-memory/MemoryPanel'
 import VersionHistory from '@/features/versioning/VersionHistory'
 import { useVersionStore } from '@/features/versioning/useVersionStore'
 import { useMemoryStore } from '@/features/context-memory/useMemoryStore'
+import { SessionPanel, HistoryTab, useSessionStore } from '@/features/session-history'
 import './styles.css'
 
 const TAB_IDS: { id: Tab; Icon: LucideIcon }[] = [
-  { id: 'input',  Icon: PenLine },
-  { id: 'canvas', Icon: Network },
-  { id: 'output', Icon: Sparkles },
+  { id: 'input',   Icon: PenLine },
+  { id: 'canvas',  Icon: Network },
+  { id: 'output',  Icon: Sparkles },
+  { id: 'history', Icon: MessageSquare },
 ]
 
 const App = () => {
@@ -50,6 +52,7 @@ const App = () => {
   const { currentProjectId } = useProjectStore()
   const { setOpen: openVersions, load: loadVersions } = useVersionStore()
   const { setOpen: openMemory } = useMemoryStore()
+  const { setOpen: openSessions } = useSessionStore()
   const mainRef = useRef<HTMLElement>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [canvasView, setCanvasView] = useState<'list' | 'canvas'>(() => {
@@ -158,6 +161,11 @@ const App = () => {
                 <History size={14} aria-hidden="true" />
               </button>
             </Tooltip>
+            <Tooltip content="Session History" side="bottom">
+              <button className="btn-icon" onClick={() => openSessions(true)} aria-label="Session History">
+                <MessageSquare size={14} aria-hidden="true" />
+              </button>
+            </Tooltip>
             <Tooltip content="Context Memory" side="bottom">
               <button className="btn-icon" onClick={() => openMemory(true)} aria-label="Context Memory">
                 <Brain size={14} aria-hidden="true" />
@@ -250,6 +258,14 @@ const App = () => {
           <PromptOutput />
         </aside>
 
+        <aside
+          className={`right-panel${activeTab !== 'history' ? ' panel-hidden' : ''}`}
+          aria-label="Session History"
+          aria-hidden={activeTab !== 'history'}
+        >
+          <HistoryTab />
+        </aside>
+
       </main>
 
       {/* Template library overlay */}
@@ -310,6 +326,7 @@ const App = () => {
       {!isExtension && <DebuggerPanel onApplyFix={handleApplyDebugFix} />}
       {!isExtension && <CompressorModal onApply={handleApplyCompression} />}
       {!isExtension && <CriticPanel />}
+      {!isExtension && <SessionPanel />}
       {!isExtension && <MemoryPanel />}
       {!isExtension && <VersionHistory projectId={currentProjectId ?? '__default__'} />}
 

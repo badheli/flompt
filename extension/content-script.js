@@ -31,6 +31,16 @@
           null
         return el ? { el, position: 'append' } : null
       },
+      getMessages () {
+        const articles = document.querySelectorAll('article[data-message-author-role]')
+        return [...articles].map(el => {
+          const role = el.getAttribute('data-message-author-role') === 'user' ? 'user' : 'assistant'
+          const content = el.querySelector('.markdown')?.textContent?.trim() ||
+                          el.querySelector('[data-message-content]')?.textContent?.trim() ||
+                          el.textContent?.trim() || ''
+          return { role, content }
+        }).filter(m => m.content)
+      },
     },
     {
       name: 'Claude',
@@ -57,6 +67,15 @@
         btn.style.setProperty('width',  '32px', 'important')
         btn.style.setProperty('height', '32px', 'important')
       },
+      getMessages () {
+        const msgs = document.querySelectorAll('[data-message-author-role], .font-claude-message, .claude-message')
+        return [...msgs].map(el => {
+          const role = el.getAttribute('data-message-author-role') === 'user' ||
+                       el.classList.contains('user-message') ? 'user' : 'assistant'
+          const content = el.textContent?.trim() || ''
+          return { role, content }
+        }).filter(m => m.content)
+      },
     },
     {
       name: 'DeepSeek',
@@ -77,6 +96,28 @@
         const el = document.querySelector('.ds-toggle-button')?.parentElement
         return el ? { el, position: 'prepend' } : null
       },
+      getMessages () {
+        const container = document.querySelector('.ds-virtual-list-visible-items') ||
+                          document.querySelector('[data-virtual-list-item-key]')?.parentElement
+        if (!container) return []
+        const items = container.querySelectorAll('[data-virtual-list-item-key]')
+        return [...items].map(item => {
+          // User message: div.d29f3d7d.ds-message > div.fbb737a4
+          const userEl = item.querySelector('.d29f3d7d.ds-message')
+          if (userEl) {
+            const c = userEl.querySelector('.fbb737a4')?.textContent?.trim() || userEl.textContent?.trim() || ''
+            return c ? { role: 'user', content: c } : null
+          }
+          // AI message: .ds-assistant-message-main-content or .ds-markdown
+          const aiEl = item.querySelector('.ds-assistant-message-main-content') ||
+                       item.querySelector('.ds-markdown')
+          if (aiEl) {
+            const c = aiEl.textContent?.trim() || ''
+            return c ? { role: 'assistant', content: c } : null
+          }
+          return null
+        }).filter(Boolean)
+      },
     },
     {
       name: 'Google AI Studio',
@@ -92,6 +133,14 @@
         const el = document.querySelector('.button-row-left') ||
                    document.querySelector('.buttons-row')
         return el ? { el, position: 'prepend' } : null
+      },
+      getMessages () {
+        const messages = document.querySelectorAll('ms-chat-turn')
+        return [...messages].map(el => {
+          const isUser = el.hasAttribute('user') || el.querySelector('[user]')
+          const content = el.textContent?.trim() || ''
+          return { role: isUser ? 'user' : 'assistant', content }
+        }).filter(m => m.content)
       },
     },
     {
@@ -117,6 +166,17 @@
       },
       onButtonMounted (btn) {
         btn.style.setProperty('border-radius', '50px', 'important')
+      },
+      getMessages () {
+        const messages = document.querySelectorAll('.message, .conversation-item, [data-message]')
+        return [...messages].map(el => {
+          const text = el.textContent?.trim() || ''
+          if (!text || text.length < 2) return null
+          const isUser = el.classList.contains('user-query') ||
+                         el.classList.contains('user') ||
+                         el.querySelector('[data-role="user"]')
+          return { role: isUser ? 'user' : 'assistant', content: text }
+        }).filter(Boolean)
       },
     },
   ]
@@ -764,6 +824,15 @@
     // User clicks "Import prompt" in the app → read and send the platform input
     if (type === 'FLOMPT_SYNC_REQUEST') {
       sendPlatformInputToIframe()
+    }
+
+    // Fetch all user/AI messages from the current page (History tab)
+    if (type === 'FLOMPT_FETCH_MESSAGES') {
+      const msgs = platform?.getMessages?.() || []
+      iframeEl?.contentWindow?.postMessage({
+        type: 'FLOMPT_MESSAGES_RESULT',
+        messages: msgs,
+      }, '*')
     }
   })
 

@@ -5,11 +5,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import decompose, compile, stars
-from app.routers import debugger, compressor, critic, system_prompt
+from app.routers import debugger, compressor, critic, system_prompt, conversations
 from app.services.ai_service import llm_queue
 from app.services.job_store import job_store
 from app.auth import verify_job_token
 from app.mcp_server import mcp
+from app.db import init_db
+
+# Init SQLite
+init_db()
 
 # Create the streamable HTTP app and its session manager before lifespan
 _mcp_http_app = mcp.streamable_http_app()
@@ -46,6 +50,7 @@ app.include_router(debugger.router, prefix="/api", tags=["debugger"])
 app.include_router(compressor.router, prefix="/api", tags=["compressor"])
 app.include_router(critic.router, prefix="/api", tags=["critic"])
 app.include_router(system_prompt.router, prefix="/api", tags=["system-prompt"])
+app.include_router(conversations.router, prefix="/api", tags=["conversations"])
 
 # ─── MCP Server (Streamable HTTP, stateless) ─────────────────────────────────
 app.mount("/mcp", _mcp_http_app)
