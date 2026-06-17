@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Download, Save, User, Bot, RefreshCw } from 'lucide-react'
 import { isExtension } from '@/lib/platform'
+import { Tooltip } from '@/components/ui/tooltip'
 import type { Message } from './useSessionStore'
 
 const API_BASE = '/api/conversations'
@@ -106,25 +107,31 @@ export default function HistoryTab() {
     <div className="history-tab">
       <div className="block-list-toolbar">
         <div className="block-list-toolbar-left">
-          <button className="canvas-ctrl-btn" onClick={doFetch} aria-label="Fetch messages">
-            <Download size={13} />
-          </button>
-          <button
-            className={`canvas-ctrl-btn${autoFetch ? ' canvas-ctrl-btn--compile' : ''}`}
-            onClick={() => setAutoFetch(v => !v)}
-            aria-label={autoFetch ? 'Auto-fetch active' : 'Start auto-fetch'}
-          >
-            <RefreshCw size={13} className={autoFetch ? 'icon-spin' : ''} />
-          </button>
+          <Tooltip content="Fetch messages" side="top">
+            <button className="canvas-ctrl-btn" onClick={doFetch} aria-label="Fetch messages">
+              <Download size={13} />
+            </button>
+          </Tooltip>
+          <Tooltip content={autoFetch ? 'Auto-fetch active' : 'Start auto-fetch'} side="top">
+            <button
+              className={`canvas-ctrl-btn${autoFetch ? ' canvas-ctrl-btn--compile' : ''}`}
+              onClick={() => setAutoFetch(v => !v)}
+              aria-label={autoFetch ? 'Auto-fetch active' : 'Start auto-fetch'}
+            >
+              <RefreshCw size={13} className={autoFetch ? 'icon-spin' : ''} />
+            </button>
+          </Tooltip>
           <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 4 }}>{messages.length || ''}</span>
-        </div>
-        <div className="block-list-toolbar-center" />
-        <div className="block-list-toolbar-right">
-          <button className="canvas-ctrl-btn" onClick={handleSave} disabled={saving || messages.length === 0} aria-label="Save to server">
-            <Save size={13} />
-          </button>
+          <div className="canvas-ctrl-divider" aria-hidden="true" />
+          <Tooltip content="Save to server" side="top">
+            <button className="canvas-ctrl-btn" onClick={handleSave} disabled={saving || messages.length === 0} aria-label="Save to server">
+              <Save size={13} />
+            </button>
+          </Tooltip>
           {saved && <span className="history-saved-hint">OK</span>}
         </div>
+        <div className="block-list-toolbar-center" />
+        <div className="block-list-toolbar-right" />
       </div>
       <div className="block-list-view-cards">
         {messages.length === 0 ? (

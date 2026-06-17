@@ -5,7 +5,8 @@
     "input": "Prompt",
     "canvas": "Canvas",
     "output": "Result",
-    "library": "Library"
+    "library": "Library",
+    "history": "History"
   },
   "header": {
     "undo": "Undo (Ctrl+Z)",

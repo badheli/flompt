@@ -38,7 +38,7 @@ export interface BlockTranslation {
 
 export interface Translations {
   nodeCount: (n: number) => string
-  tabs: { input: string; canvas: string; output: string; library: string }
+  tabs: { input: string; canvas: string; output: string; library: string; history: string }
   header: {
     undo: string
     redo: string
