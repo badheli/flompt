@@ -17,9 +17,9 @@ export interface Session {
 interface SessionState {
   isOpen: boolean
   sessions: Session[]
-  expandedId: string | null
+  selectedSession: Session | null
   setOpen: (open: boolean) => void
-  toggleExpand: (id: string) => void
+  selectSession: (s: Session | null) => void
   loadSessions: () => Promise<void>
   deleteSession: (id: string) => Promise<void>
   refresh: () => Promise<void>
@@ -30,9 +30,9 @@ const API_BASE = '/api/conversations'
 export const useSessionStore = create<SessionState>((set, get) => ({
   isOpen: false,
   sessions: [],
-  expandedId: null,
+  selectedSession: null,
   setOpen: (open) => set({ isOpen: open }),
-  toggleExpand: (id) => set((s) => ({ expandedId: s.expandedId === id ? null : id })),
+  selectSession: (s) => set({ selectedSession: s }),
   loadSessions: async () => {
     const res = await fetch(API_BASE)
     if (res.ok) {

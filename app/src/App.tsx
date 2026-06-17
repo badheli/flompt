@@ -33,7 +33,7 @@ import MemoryPanel from '@/features/context-memory/MemoryPanel'
 import VersionHistory from '@/features/versioning/VersionHistory'
 import { useVersionStore } from '@/features/versioning/useVersionStore'
 import { useMemoryStore } from '@/features/context-memory/useMemoryStore'
-import { SessionPanel, HistoryTab, useSessionStore } from '@/features/session-history'
+import { SessionPanel, SessionDetail, HistoryTab, useSessionStore } from '@/features/session-history'
 import './styles.css'
 
 const BASE_TABS: { id: Tab; Icon: LucideIcon }[] = [
@@ -55,7 +55,7 @@ const App = () => {
   const { currentProjectId } = useProjectStore()
   const { setOpen: openVersions, load: loadVersions } = useVersionStore()
   const { setOpen: openMemory } = useMemoryStore()
-  const { setOpen: openSessions } = useSessionStore()
+  const { setOpen: openSessions, selectedSession } = useSessionStore()
   const mainRef = useRef<HTMLElement>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [canvasView, setCanvasView] = useState<'list' | 'canvas'>(() => {
@@ -205,6 +205,10 @@ const App = () => {
         ref={mainRef}
         className={`main${isDecomposing ? ' is-decomposing' : ''}`}
       >
+        {selectedSession ? (
+          <SessionDetail />
+        ) : (
+          <>
         <aside
           className={`left-panel${activeTab !== 'input' ? ' panel-hidden' : ''}`}
           aria-label={t.accessibility.inputPanel}
@@ -271,6 +275,8 @@ const App = () => {
           </aside>
         )}
 
+          </>
+        )}
       </main>
 
       {/* Template library overlay */}

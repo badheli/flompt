@@ -4196,6 +4196,12 @@ body {
 .history-tab {
   display: flex; flex-direction: column; height: 100%;
 }
+.session-detail {
+  display: flex; flex-direction: column;
+  width: 100%; height: 100%;
+}
+.session-detail > .block-list-toolbar { flex-shrink: 0; }
+
 .history-toolbar {
   display: flex; align-items: center; gap: 2px;
   height: 32px; padding: 0 6px; flex-shrink: 0;
