@@ -4161,6 +4161,7 @@ body {
   border-top: 1px solid var(--border);
   padding: 10px 12px;
   display: flex; flex-direction: column; gap: 8px;
+  max-height: 360px; overflow-y: auto;
 }
 
 .session-msg-card {
@@ -4195,14 +4196,18 @@ body {
 .history-tab {
   display: flex; flex-direction: column; height: 100%;
 }
-.history-tab .block-list-toolbar {
-  flex-shrink: 0;
+.history-toolbar {
+  display: flex; align-items: center; gap: 2px;
+  height: 32px; padding: 0 6px; flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+}
+.history-tab {
+  margin: -16px; height: calc(100% + 32px);
+  display: flex; flex-direction: column;
 }
 .history-tab .block-list-view-cards {
   flex: 1; overflow-y: auto; padding: 12px;
-}
-.history-tab .block-list-toolbar-actions {
-  display: flex; align-items: center; gap: 8px;
 }
 .history-saved-hint {
   font-size: 11px; color: #22c55e; font-weight: 500;

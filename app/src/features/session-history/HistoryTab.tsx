@@ -27,7 +27,22 @@ export default function HistoryTab() {
   const [pageUrl, setPageUrl] = useState<string | null>(null)
   const [autoFetch, setAutoFetch] = useState(false)
   const seenRef = useRef(new Set<string>())
-  const seqRef = useRef(0)  // insertion order for each message
+  const seqRef = useRef(0)
+  const lastUrlRef = useRef<string | null>(null)
+
+  // Reset state when URL changes (user switched sessions)
+  useEffect(() => {
+    if (pageUrl && pageUrl !== lastUrlRef.current) {
+      if (lastUrlRef.current) {
+        // URL changed — reset accumulated messages
+        seenRef.current = new Set()
+        seqRef.current = 0
+        setMessages([])
+        setSaved(false)
+      }
+      lastUrlRef.current = pageUrl
+    }
+  }, [pageUrl])
 
   useEffect(() => {
     if (!isExtension) return
@@ -64,6 +79,7 @@ export default function HistoryTab() {
 
   const handleSave = async () => {
     if (messages.length === 0 || saving) return
+    setAutoFetch(false) // stop auto-fetch on save
     setSaving(true)
     const title = messages.find((m) => m.role === 'user')?.content?.slice(0, 60) || ''
 
@@ -89,26 +105,25 @@ export default function HistoryTab() {
   return (
     <div className="history-tab">
       <div className="block-list-toolbar">
-        <div className="block-list-toolbar-actions">
-          {isExtension && (
-            <>
-              <button className="btn btn-primary" onClick={doFetch}>
-                <Download size={14} /> Fetch
-              </button>
-              <button
-                className={`btn ${autoFetch ? 'btn-accent' : 'btn-secondary'}`}
-                onClick={() => setAutoFetch(v => !v)}
-                title={autoFetch ? 'Auto-fetching every 2s' : 'Manual fetch only'}
-              >
-                <RefreshCw size={14} className={autoFetch ? 'icon-spin' : ''} /> Auto
-              </button>
-              {autoFetch && <span className="history-saved-hint" style={{ fontSize: 10 }}>{messages.length} msgs</span>}
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving || messages.length === 0}>
-                <Save size={14} /> {saving ? 'Saving...' : 'Save'}
-              </button>
-              {saved && <span className="history-saved-hint">Saved</span>}
-            </>
-          )}
+        <div className="block-list-toolbar-left">
+          <button className="canvas-ctrl-btn" onClick={doFetch} aria-label="Fetch messages">
+            <Download size={13} />
+          </button>
+          <button
+            className={`canvas-ctrl-btn${autoFetch ? ' canvas-ctrl-btn--compile' : ''}`}
+            onClick={() => setAutoFetch(v => !v)}
+            aria-label={autoFetch ? 'Auto-fetch active' : 'Start auto-fetch'}
+          >
+            <RefreshCw size={13} className={autoFetch ? 'icon-spin' : ''} />
+          </button>
+          <span style={{ fontSize: 10, color: 'var(--text-dim)', marginLeft: 4 }}>{messages.length || ''}</span>
+        </div>
+        <div className="block-list-toolbar-center" />
+        <div className="block-list-toolbar-right">
+          <button className="canvas-ctrl-btn" onClick={handleSave} disabled={saving || messages.length === 0} aria-label="Save to server">
+            <Save size={13} />
+          </button>
+          {saved && <span className="history-saved-hint">OK</span>}
         </div>
       </div>
       <div className="block-list-view-cards">
