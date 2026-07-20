@@ -11,7 +11,7 @@ usage() {
 Usage: bash start.sh [OPTIONS]
 
 Options:
-  --backend-port PORT   Backend host port        (default: 8000)
+  --backend-port PORT   Backend host port        (default: 8080)
   --app-port PORT       App dev server host port (default: 5173)
   --api-key KEY         AI provider API key
   --provider PROVIDER   anthropic | openai | groq (default: groq)
@@ -32,7 +32,7 @@ EOF
 }
 
 # ── Defaults ──────────────────────────────────────────────────────
-BACKEND_PORT="${BACKEND_PORT:-8000}"
+BACKEND_PORT="${BACKEND_PORT:-8080}"
 APP_PORT="${APP_PORT:-5173}"
 API_KEY=""
 AI_PROVIDER=""
@@ -85,20 +85,21 @@ cat > docker-compose.override.yml <<EOF
 services:
   backend:
     ports:
-      - "${BACKEND_PORT}:8000"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     env_file:
       - path: ./backend/.env
         required: false
+    command: uvicorn app.main:app --host 0.0.0.0 --port ${BACKEND_PORT} --reload
 
   frontend:
     build: ./app
     ports:
-      - "${APP_PORT}:5173"
+      - "${APP_PORT}:${APP_PORT}"
     volumes:
       - ./app:/app
       - /app/node_modules
     environment:
-      - VITE_BACKEND_URL=http://backend:8000
+      - VITE_BACKEND_URL=http://backend:${BACKEND_PORT}
     depends_on:
       - backend
     command: npm run dev -- --host 0.0.0.0
